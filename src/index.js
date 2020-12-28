@@ -9,6 +9,11 @@ let links = [
     url: 'www.howtographql.com',
     description: 'Fullstack tutorial for GraphQL',
   },
+  {
+    id: 'link-1',
+    url: 'www.example.com',
+    description: 'Example Domain',
+  },
 ]
 
 let idCount = links.length
@@ -26,6 +31,14 @@ const resolvers = {
       }
       links.push(newLink)
       return newLink
+    },
+    delete: (parent, args) => {
+      link = links.find((link) => link.id === args.id)
+      if (!link) {
+        return new Error(`No element with id ${args.id}`)
+      }
+      links = links.filter((link) => link.id === args.id)
+      return link
     },
   },
   Link: {
