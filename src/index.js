@@ -1,5 +1,8 @@
 const fs = require('fs')
 const path = require('path')
+const { PrismaClient } = require('@prisma/client')
+
+const prisma = new PrismaClient()
 
 const { ApolloServer } = require('apollo-server')
 
@@ -20,25 +23,20 @@ let idCount = links.length
 const resolvers = {
   Query: {
     info: () => `This is the API of a Hackernews Clone`,
-    feed: () => links,
+    feed: async (parent, args, context, info) => context.prisma.link.findMany(),
   },
   Mutation: {
-    post: (parent, args) => {
-      const newLink = {
-        id: `link-${idCount++}`,
-        description: args.description,
-        url: args.url,
-      }
-      links.push(newLink)
+    post: (parent, args, context, info) => {
+      const newLink = context.prisma.link.create({
+        data: {
+          url: args.url,
+          description: args.description,
+        },
+      })
       return newLink
     },
-    delete: (parent, args) => {
-      link = links.find((link) => link.id === args.id)
-      if (!link) {
-        return new Error(`No element with id ${args.id}`)
-      }
-      links = links.filter((link) => link.id === args.id)
-      return link
+    delete: (parent, args, context, info) => {
+      return context.prisma.link.delete({ where: { id: parseInt(args.id) } })
     },
   },
   Link: {
@@ -51,6 +49,9 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs: fs.readFileSync(path.join(__dirname, 'schema.graphql'), 'utf-8'),
   resolvers,
+  context: {
+    prisma,
+  },
 })
 
 server.listen().then(({ url }) => console.log(`Server is running on ${url}`))
